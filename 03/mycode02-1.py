@@ -12,18 +12,29 @@ import time
 
 # 初期状態の設定
 SPEEDS = [-3, -2, -1, 1, 2, 3]  # ボールのx方向初速選択肢
+BLOCKS_X = [150, 200, 250, 300]
+BLOCKS_Y = [300, 100, 200, 300]
+BLOCKS_W = [40, 40, 40, 40]
+BLOCKS_H = [10, 10, 10, 10]
 DURATION = 0.01  # 描画間隔(秒)
 BALL_X0 = 400  # ボールの初期位置(x)
 BALL_Y0 = 100  # ボールの初期位置(y)
 PADDLE_X0 = 350  # パドルの初期位置(x)
 PADDLE_Y0 = 500  # パドルの初期位置(y)
 PADDLE_VX = 5  # パドルの速度
+WALL_X0 = 100
+WALL_Y0 = 50
+WALL_W = 400
+WALL_H = 500
 
 BALL_VX = random.choice(SPEEDS)  # ボールのx方向初速
 BALL_VY = 0  # ボールのy方向初速
 
-GRAVITY = 0.1
-REACTION = 1.005
+GRAVITY = 0.05
+REACTION = 1.01
+
+count1 = 0
+count2 = 0
 
 # 変える色を用意する。
 COLORS = ["blue", "red", "green", "yellow", "brown", "gray"]
@@ -60,11 +71,42 @@ class Wall:
     h: int
 
 
+@dataclass
+class Block:
+    x: int
+    y: int
+    w: int
+    h: int
+
 # -------------------------
 
 def make_wall(wall):
     global canvas
     canvas.create_rectangle(wall.x, wall.y, wall.x+wall.w, wall.y+wall.h)
+    canvas.create_line(WALL_X0, PADDLE_Y0, WALL_X0 + 50, PADDLE_Y0)
+    canvas.create_line(WALL_X0 + WALL_W, PADDLE_Y0, WALL_X0 + WALL_W - 50, PADDLE_Y0)
+
+def make_block(block, c="Blue"):
+    canvas.create_rectangle(block.x, block.y, block.x + block.w, block.y + block.h, fill=c, outline=c)
+
+
+def block_judge(block):
+    global canvas, count1, count2
+
+    if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count1 == 0:
+        count1 = 1
+    else:
+        count1 = 0
+    if ball.y + ball.d >= block.y and ball.y <= block.y + block.h and count1 == 1:
+        ball.vy = -ball.vy
+
+    if ball.y + ball.d >= block.y and ball.y <= block.y + block.h and count2 == 2:
+        count2 = 2
+    else:
+        count2 = 0
+    if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count2 != 0:
+        ball.vx = -ball.vx
+
 
 
 # ball
@@ -141,8 +183,13 @@ tk.update()
 # 描画アイテムを準備する。
 paddle = make_paddle(PADDLE_X0, PADDLE_Y0)
 ball = make_ball(BALL_X0, BALL_Y0, BALL_VX, BALL_VY, 10)
-wall = Wall(100, 100, 600, 400)
+wall = Wall(WALL_X0, WALL_Y0, WALL_W, WALL_H)
+blocks = []
+for x in range(4):
+    blocks.append(Block(BLOCKS_X[x], BLOCKS_Y[x], BLOCKS_W[x], BLOCKS_H[x]))
 make_wall(wall)
+for block in blocks:
+    make_block(block)
 
 # イベントと、イベントハンドラを連結する。
 canvas.bind_all('<KeyPress-Left>', left_paddle)
@@ -161,17 +208,23 @@ while True:
         ball.vx = -ball.vx
     if ball.y + ball.vy <= wall.y:  # 上の壁
         ball.vy = -ball.vy
-    if ball.y + ball.d + ball.vy >= 600:  # 下に逸らした
+    if ball.y + ball.d + ball.vy >= WALL_Y0 + WALL_H:  # 下に逸らした
         break
-    if paddle.x <= 0:
-        paddle.x = 0
-    if paddle.x + paddle.w >= 800:
-        paddle.x = 800 - paddle.w
+    if paddle.x <= WALL_X0 + 50:
+        paddle.x = WALL_X0 + 50
+    if paddle.x + paddle.w >= WALL_X0 + WALL_W - 50:
+        paddle.x = WALL_X0 + WALL_W - 50 - paddle.w
     # ボールの下側がパドルの上面に届き、横位置がパドルと重なる
     if (paddle.y <= ball.y + ball.d <= paddle.y + paddle.h \
             and paddle.x <= ball.x + ball.d / 2 <= paddle.x + paddle.w):
         change_paddle_color(paddle, random.choice(COLORS))  # 色を変える
         ball.vy = -ball.vy * REACTION  # ボールの移動方向が変わる
+    if ball.x + ball.d <= WALL_X0 + 50 and ball.y + ball.d >= PADDLE_Y0 \
+            or ball.x >= WALL_X0 + WALL_W - 50 and ball.y + ball.d >= PADDLE_Y0:
+        ball.vy = -ball.vy
+
+    for x in range(4):
+        block_judge(blocks[x])
 
     redraw_paddle(paddle)  # パドルの再描画
     redraw_ball(ball)  # ボールの再描画
