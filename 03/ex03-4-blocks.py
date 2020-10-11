@@ -1,9 +1,7 @@
-# Python によるプログラミング：第 3 章
-#    練習問題 3.1
-# ボールは上部、左、右の3方向の壁で跳ね返る
-# ボールが画面の下部に出てしまった場合ゲームオーバ
+# 20K1026 日比野将己
+# 練習問題 3-1-3
 # --------------------------
-# プログラム名: ex03-2-paddle.py
+# プログラム名: ex03-blocks.py
 
 from tkinter import *
 from dataclasses import dataclass
@@ -30,7 +28,7 @@ WALL_H = 500  # 外枠の高さ
 BALL_VX = random.choice(SPEEDS)  # ボールのx方向初速
 BALL_VY = 0  # ボールのy方向初速
 
-GRAVITY = 0.05  # 重力加速度
+GRAVITY =0.05  # 重力加速度
 REACTION = 1.01  # 反発係数
 
 count1 = 0  # ブロックのx座標を判定する count
@@ -83,9 +81,9 @@ class Block:
 
 def make_wall(wall):  # 外枠を作る関数
     global canvas
-    canvas.create_rectangle(wall.x, wall.y, wall.x + wall.w, wall.y + wall.h)  # 外枠
-    canvas.create_line(WALL_X0, PADDLE_Y0, WALL_X0 + 50, PADDLE_Y0)  # パドルの左の出っ張り
-    canvas.create_line(WALL_X0 + WALL_W, PADDLE_Y0, WALL_X0 + WALL_W - 50, PADDLE_Y0)  # パドルの右の出っ張り
+    canvas.create_rectangle(wall.x, wall.y, wall.x + wall.w, wall.y + wall.h, width=10)  # 外枠
+    canvas.create_line(WALL_X0, PADDLE_Y0, WALL_X0 + 50, PADDLE_Y0, width=10)  # パドルの左の出っ張り
+    canvas.create_line(WALL_X0 + WALL_W, PADDLE_Y0, WALL_X0 + WALL_W - 50, PADDLE_Y0, width=10)  # パドルの右の出っ張り
 
 
 def make_block(block, c="Blue"):  # ブロックを作る関数
@@ -95,41 +93,19 @@ def make_block(block, c="Blue"):  # ブロックを作る関数
 
 def block_judge(block):  # ブロックに当たったかを判定する関数
     global canvas
+    if ball.x + ball.d > block.x and ball.x < block.x + block.w:  # もしブロックの上か下にボールがあれば
+        count1 = 1  # count1 を１にする
+    else:
+        count1 = 0  # その他は 0
+    if ball.y + ball.d > block.y and ball.y < block.y + block.h and count1 == 1:  # count1 が１で、ボールがブロックの上か下に当たれば
+        ball.vy = -ball.vy  # ｙ方向に反射させる
 
-    if block.y > ball.y and block.y + block.h > ball.y + ball.d and ball.vy > 0:
-        ball.y = block.y - ball.d
-        ball.vy = -ball.vy
-
-        ### ブロック下に接触した場合
-    if block.y < ball.y and block.y + block.h < ball.y + ball.d and ball.vy > 0:
-        ball.y = block.y + block.h
-        ball.vy = -ball.vy
-
-        ### ブロック左に接触した場合
-    if block.x > ball.x and block.x + block.w > ball.x + ball.d and ball.vx > 0:
-        ball.x = block.x - ball.d
-        ball.vx = -ball.vx
-
-        ### ブロック右に接触した場合
-    if block.x < ball.x and block.x + block.w < ball.x + ball.d and ball.vx > 0:
-        ball.x = block.x + block.w
-        ball.vx = -ball.vx
-
-    # if ball.x + ball.d > block.x and ball.x < block.x + block.w:  # もしブロックの上か下にボールがあれば
-    #     count1 = 1  # count1 を１にする
-    # else:
-    #     count1 = 0  # その他は 0
-    # if ball.y + ball.d > block.y and ball.y < block.y + block.h and count1 == 1:  # count1 が１で、ボールがブロックの上か下に当たれば
-    #     ball.vy = -ball.vy  # ｙ方向に反射させる
-    #     count1 = 2
-    #
-    # if ball.y + ball.d >= block.y and ball.y <= block.y + block.h:  # もしブロックの左か右にボールがあれば
-    #     count2 = 1  # count2 を１にする
-    # else:
-    #     count2 = 0  # その他は 0
-    # if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count2 == 1:  # count2 が１で、ボールがブロックの左か右に当たれば
-    #     ball.vx = -ball.vx  # x 方向に反射させる
-    #     count2 = 2
+    if ball.y + ball.d >= block.y and ball.y <= block.y + block.h:  # もしブロックの左か右にボールがあれば
+        count2 = 1  # count2 を１にする
+    else:
+        count2 = 0  # その他は 0
+    if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count2 == 1 and count1 != 1:  # count2 が１で、ボールがブロックの左か右に当たれば
+        ball.vx = -ball.vx  # x 方向に反射させる
 
     # このようにそれぞれを完全に独立しておかないとお互い競合して vx と vy が両方変わって、当たったほうに戻っちゃう
 
@@ -241,10 +217,10 @@ while True:
         paddle.x = WALL_X0 + WALL_W - 50 - paddle.w  # パドルをその場に止める
     # ボールの下側がパドルの上面に届き、横位置がパドルと重なる
     if (paddle.y <= ball.y + ball.d <= paddle.y + paddle.h \
-            and paddle.x <= ball.x + ball.d / 2 <= paddle.x + paddle.w):
+            and paddle.x <= ball.x + ball.d / 2 <= paddle.x + paddle.w):    # パドルにボールが当たったら
         change_paddle_color(paddle, random.choice(COLORS))  # 色を変える
         ball.vy = -ball.vy * REACTION  # ボールの移動方向が変わる（反射が大きくなる）
-    if ball.x + ball.d <= WALL_X0 + 50 and ball.y + ball.d >= PADDLE_Y0 \
+    if ball.x <= WALL_X0 + 50 and ball.y + ball.d >= PADDLE_Y0 \
             or ball.x >= WALL_X0 + WALL_W - 50 and ball.y + ball.d >= PADDLE_Y0:  # ボールが左の棒か右の棒に当たったら
         ball.vy = -ball.vy  # ボールを反射させる
 

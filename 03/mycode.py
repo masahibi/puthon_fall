@@ -23,7 +23,7 @@ BALL_VX = random.choice(SPEEDS)  # ボールのx方向初速
 BALL_VY = 0  # ボールのy方向初速
 
 GRAVITY = 0.1
-REACTION = 1.005
+REACTION = 1.01
 
 # 変える色を用意する。
 COLORS = ["blue", "red", "green", "yellow", "brown", "gray"]
