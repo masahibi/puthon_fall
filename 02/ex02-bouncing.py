@@ -6,6 +6,7 @@
 from tkinter import *
 from dataclasses import dataclass
 import time
+import sys
 
 DURATION = 0.005  # 画面停止時間
 GRAVITY = 0.1  # 重力
@@ -75,7 +76,7 @@ ball = make_ball(200, 200, 50, 3, 0, "black")
 
 while True:
     # for ball in balls:
-    if y2 - y1 < sys.float_info.min:  # 頂点と着地の y 座標の差が限りなく 0 に近づいたとき（完全な方法を思いつかなかった）
+    if sys.float_info.min > y2 - y1:  # 頂点と着地の y 座標の差が限りなく 0 に近づいたとき（完全な方法を思いつかなかった）
         break  # 終了
     ball.vy += GRAVITY  # 重力付加
     move_ball(ball)  # ボール動かす

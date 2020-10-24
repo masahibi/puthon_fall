@@ -33,6 +33,7 @@ REACTION = 1.01  # 反発係数
 
 count1 = 0  # ブロックのx座標を判定する count
 count2 = 0  # ブロックのｙ座標を判定する count
+before = 0
 
 # 変える色を用意する。
 COLORS = ["blue", "red", "green", "yellow", "brown", "gray"]
@@ -92,7 +93,7 @@ def make_block(block, c="Blue"):  # ブロックを作る関数
 
 
 def block_judge(block):  # ブロックに当たったかを判定する関数
-    global canvas
+    global canvas, count1, count2,before
     if ball.x + ball.d > block.x and ball.x < block.x + block.w:  # もしブロックの上か下にボールがあれば
         count1 = 1  # count1 を１にする
     else:
@@ -104,7 +105,7 @@ def block_judge(block):  # ブロックに当たったかを判定する関数
         count2 = 1  # count2 を１にする
     else:
         count2 = 0  # その他は 0
-    if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count2 == 1 and count1 != 1:  # count2 が１で、ボールがブロックの左か右に当たれば
+    if ball.x + ball.d >= block.x and ball.x <= block.x + block.w and count2 == 1:  # count2 が１で、ボールがブロックの左か右に当たれば
         ball.vx = -ball.vx  # x 方向に反射させる
 
     # このようにそれぞれを完全に独立しておかないとお互い競合して vx と vy が両方変わって、当たったほうに戻っちゃう
@@ -220,6 +221,7 @@ while True:
             and paddle.x <= ball.x + ball.d / 2 <= paddle.x + paddle.w):    # パドルにボールが当たったら
         change_paddle_color(paddle, random.choice(COLORS))  # 色を変える
         ball.vy = -ball.vy * REACTION  # ボールの移動方向が変わる（反射が大きくなる）
+        ball.y = paddle.y - ball.d
     if ball.x <= WALL_X0 + 50 and ball.y + ball.d >= PADDLE_Y0 \
             or ball.x >= WALL_X0 + WALL_W - 50 and ball.y + ball.d >= PADDLE_Y0:  # ボールが左の棒か右の棒に当たったら
         ball.vy = -ball.vy  # ボールを反射させる

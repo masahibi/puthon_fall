@@ -7,6 +7,9 @@
 
 from tkinter import *
 
+x = 200
+y = 100
+
 
 def flower(x, y, fill1, fill2):
     global canvas
@@ -53,8 +56,10 @@ def flower(x, y, fill1, fill2):
 
 
 tk = Tk()
-canvas = Canvas(tk, width=500, height=500)
+canvas = Canvas(tk, width=800, height=500)
 canvas.pack()
-flower(200, 100, "red", "purple")
+for i in range(3):
+    flower(x, y, "red", "purple")
+    x += 100
 
 tk.mainloop()
