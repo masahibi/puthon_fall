@@ -1,7 +1,7 @@
 # 20K1026 日比野将己
-# 練習問題 3-1-2
+# 練習問題 [2]
 # --------------------------
-# プログラム名: ex03-gravity.py
+# プログラム名: ex05-2-ball.py
 
 from tkinter import *
 from dataclasses import dataclass
