@@ -7,7 +7,7 @@
 
 from tkinter import *
 
-x = 200
+x = 200#
 y = 100
 
 
