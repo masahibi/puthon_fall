@@ -6,6 +6,7 @@
 from tkinter import *
 from dataclasses import dataclass
 import time
+import sys
 
 DURATION = 0.01  # 画面停止時間
 GRAVITY = 0.1  # 重力
