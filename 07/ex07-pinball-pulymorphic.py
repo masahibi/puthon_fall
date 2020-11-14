@@ -7,8 +7,6 @@ from tkinter import *
 import time
 
 # 定数定義
-import self as self
-
 BOX_LEFT = 100  # ゲーム領域の左端
 BOX_TOP = 100  # ゲーム領域の上位置
 BOX_WIDTH = 300  # ゲーム領域の幅
