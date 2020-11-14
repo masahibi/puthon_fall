@@ -1,7 +1,7 @@
 # 20K1026 日比野将己
-#  第7回-課題[1]
+#  第7回-課題[2]
 # --------------------------
-# プログラム名: ex-07-pinball-inheritance.py
+# プログラム名: ex-07-pinball-polymorphic.py
 
 from tkinter import *
 import time
@@ -50,12 +50,12 @@ class MovingObject:  # ボール、パドル、ブロックの親クラス
                       self.x + self.w, self.y + self.h)  # id の座標を変更
 
 
-class Block(MovingObject):
+class Block(MovingObject):  # MovingObject の子クラス
     def __init__(self, id, x, y, w, h):
         MovingObject.__init__(self, id, x, y, w, h, 0, 0)  # 親クラスの継承
 
 
-class Ball(MovingObject):  # MovingObject クラスの子クラス
+class Ball(MovingObject):  # MovingObject の子クラス
     def __init__(self, id, x, y, d, vy):
         MovingObject.__init__(self, id, x, y, d, d, 0, vy)  # 親クラスの継承
         self.d = d
@@ -65,7 +65,7 @@ class Ball(MovingObject):  # MovingObject クラスの子クラス
         self.y += self.vy  # 反射させる
 
 
-class Paddle(MovingObject):  # MovingObject クラスの子クラス
+class Paddle(MovingObject):  # MovingObject の子クラス
     def __init__(self, id, x, y, w, h, dx=0):
         MovingObject.__init__(self, id, x, y, w, h, dx, 0)  # 親クラスの継承
         self.dx = dx
@@ -140,14 +140,16 @@ class Box:
         self.paddle.dx = 0  # ストップ
 
     def animate(self):
+        objects = [self.ball, self.paddle]  # ボール、パドルクラスのリスト（ポリモーフィズム用）
+
         while True:
-            self.ball.move()  # ボールの移動
+            for obj in objects:  # クラスのリストをforで回す（ポリモーフィズム用）
+                obj.move()  # パドルかボールの移動
+                obj.redraw()  # パドルかボールの再描写
             self.check_wall()  # 壁の判定
             self.check_paddle()  # パドルの判定
             self.check_block()  # ブロックの判定
-            self.ball.redraw()  # ボールの再描写
-            self.paddle.move()  # パドルの移動
-            self.paddle.redraw()  # パドルの再描写
+
             if self.ball.y + self.ball.d >= self.south:  # もし下に当たったら  ←-- 関数にするとbreakが使えないから、これは直接！
                 break  # 終了
             time.sleep(self.duration)
@@ -161,6 +163,7 @@ canvas = Canvas(tk, width=CANVAS_WIDTH,
 canvas.pack()
 
 box = Box(BOX_LEFT, BOX_TOP, BOX_WIDTH, BOX_HEIGHT, duration=DURATION)  # ボールクラス生成
+
 canvas.bind_all('<KeyPress-Left>', box.left_paddle)  # もし左を押したら、パドルを左に
 canvas.bind_all('<KeyPress-Right>', box.right_paddle)  # もし右を押したら、パドルを右に
 canvas.bind_all('<KeyRelease-Left>', box.stop_paddle)  # もし左を放したら、ストップ
