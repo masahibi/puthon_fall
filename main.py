@@ -1,183 +1,199 @@
-# 20K1026 日比野将己
-# 練習問題 3-1-2
+# Python によるプログラミング：第 7 章
+#  練習問題 7.1 Ball, Block Paddle の再定義
 # --------------------------
-# プログラム名: ex03-gravity.py
+# プログラム名: ex07-inheritance-block.py
 
 from tkinter import *
 from dataclasses import dataclass
-import random
 import time
 
-# 初期状態の設定
-SPEEDS = [-3, -2, -1, 1, 2, 3]  # ボールのx方向初速選択肢
-DURATION = 0.01  # 描画間隔(秒)
-BALL_X0 = 400  # ボールの初期位置(x)
-BALL_Y0 = 100  # ボールの初期位置(y)
-PADDLE_X0 = 350  # パドルの初期位置(x)
-PADDLE_Y0 = 500  # パドルの初期位置(y)
-PADDLE_VX = 5  # パドルの速度
+# 定数群
+BOX_TOP_X = 100        # ゲーム領域の左上X座標
+BOX_TOP_Y = 100        # ゲーム領域の左上Y座標
+BOX_WIDTH = 300        # ゲーム領域の幅
+BOX_HEIGHT = 300       # ゲーム領域の高さ
 
-BALL_VX = random.choice(SPEEDS)  # ボールのx方向初速
-BALL_VY = 0  # ボールのy方向初速
+CANVAS_WIDTH = BOX_TOP_X + BOX_WIDTH + 100    # Canvasの幅
+CANVAS_HEIGHT = BOX_TOP_Y + BOX_HEIGHT + 100  # Canvasの高さ
+CANVAS_BACKGROUND = "lightgray"               # Canvasの背景色
 
-WALL_X = 100
-WALL_Y = 100
-WALL_W = 600
-WALL_H = 400
-GRAVITY = 0.1
-REACTION = 1.01
+DURATION = 0.05        # 描画間隔
 
-# 変える色を用意する。
-COLORS = ["blue", "red", "green", "yellow", "brown", "gray"]
+BALL_Y0 = BOX_TOP_Y + BOX_HEIGHT/2   # ボールの初期位置(Y)
+BALL_DIAMETER = 10     # ボールの直径
+BALL_VX = 10           # ボールの速度
+BALL_COLOR = "red"     # ボールの色
 
+NUM_BLOCKS = 5                 # ブロックの数
+BLOCK_WIDTH = 8                # ブロックの幅
+BLOCK_HEIGHT = 20              # ブロックの高さ
+BLOCK_COLOR = "green"          # ブロックの色
+BLOCK_SPAN = BLOCK_WIDTH + 2   # ブロックの間隔
+BLOCK_TOP = BALL_Y0 - BLOCK_HEIGHT/2    # ブロックの位置(Y)を計算
 
-# -------------------------
+PADDLE_WIDTH = 10      # パドルの幅
+PADDLE_HEIGHT = 40     # パドルの高さ
+PADDLE_COLOR = "black" # パドルの色
+
+# ----------------------------------
+class CustomCanvas(Canvas):
+    def __init__(self, width=300, height=300, bg="white"):
+        super().__init__(tk, width=width, height=height, bg=bg)
+        # Canvas.__init__(self, tk, width=width, height=height, bg=bg)
+        self.pack()
+
+# 共通の親クラスとして、MovingObjectを定義
 @dataclass
-class Ball:
+class MovingObject:
     id: int
     x: int
     y: int
+    w: int
+    h: int
     vx: int
     vy: int
-    d: int
-    c: str
+
+    def redraw(self):                   # 再描画(移動結果の画面反映)
+        canvas.coords(self.id, self.x, self.y,
+                      self.x + self.w, self.y + self.h)
+
+    def move(self):                     # 移動させる
+        self.x += self.vx
+        self.y += self.vy
 
 
+# Ballは、MovingObjectを継承している。
+class Ball(MovingObject):
+    def __init__(self, id, x, y, d, vx):
+        MovingObject.__init__(self, id, x, y, d, d, vx, 0)
+        # super().__init__(id, x, y, d, d, vx, 0) # も可能
+        self.d = d      # 直径として記録
+
+
+# Paddleは、MovingObjectを継承している。
+class Paddle(MovingObject):
+    def __init__(self, id, x, y, w, h):
+        MovingObject.__init__(self, id, x, y, w, h, 0, 0)
+        # super().__init__(id, x, y, w, h, 0, 0) # も可能
+
+    def set_v(self, v):
+        self.vy = v     # 移動量の設定は、独自メソッド
+
+    def stop(self):     # 停止も、Paddle独自のメソッド
+        self.vy = 0
+
+
+# ブロックも、MovingObjectを継承
+class Block(MovingObject):
+    def __init__(self, id, x, y, w, h):
+        MovingObject.__init__(self, id, x, y, w, h, 0, 0)
+        # super().__init__(id, x, y, w, h, 0, 0) # も可能
+
+# ----------------------------------
+# Box(ゲーム領域)の定義
 @dataclass
-class Paddle:
-    id: int
-    x: int
-    y: int
-    w: int
-    h: int
-    vx: int
-    c: str
+class Box:
+    west: int
+    north: int
+    east: int
+    south: int
+    ball: Ball
+    paddle: Paddle
+    blocks: list
+    duration: float
 
+    def __init__(self, x, y, w, h, duration):
+        self.west, self.north = (x, y)
+        self.east, self.south = (x + w, y + h)
+        self.ball = None
+        self.paddle = None
+        self.paddle_v = 2
+        self.blocks = []
+        self.duration = duration
 
-@dataclass
-class Wall:
-    x: int
-    y: int
-    w: int
-    h: int
+    def create_ball(self, x, y, d, vx):  # ボールの生成
+        id = canvas.create_oval(x, y, x + d, y + d, fill=BALL_COLOR)
+        return Ball(id, x, y, d, vx)
 
+    def create_paddle(self, x, y, w, h): # パドルの生成
+        id = canvas.create_rectangle(x, y, x + w, y + h, fill=PADDLE_COLOR)
+        return Paddle(id, x, y, w, h)
 
-# -------------------------
+    def create_block(self, x, y, w, h):  # ブロックの生成
+        id = canvas.create_rectangle(x, y, x + w, y + h, fill=BLOCK_COLOR)
+        return Block(id, x, y, w, h)
 
-def make_wall(wall):    # 外枠の作成関数
-    global canvas
-    canvas.create_rectangle(wall.x, wall.y, wall.x+wall.w, wall.y+wall.h, width=3)    # 外枠作成
+    def check_wall(self, ball):   # 壁に当たった時の処理
+        if ball.x <= self.west or ball.x + ball.d >= self.east:
+            ball.vx = - ball.vx
 
+    def check_paddle(self, paddle, ball):  # ボールがパドルに当たった処理
+        if (ball.x + ball.d >=paddle.x
+            and paddle.y <= ball.y + ball.d
+            and ball.y <= paddle.y + paddle.h):
+            ball.vx = - ball.vx
 
-# ball
-# ボールの描画・登録
-def make_ball(x, y, vx, vy, d=3, c="black"):    # ボールの作成関数
-    id = canvas.create_oval(x, y, x + d, y + d,
-                            fill=c, outline=c)    # id にボールの初期値を代入
-    return Ball(id, x, y, vx, vy, d, c)    # id を加えて返す
+    def check_block(self, block, ball):  # ボールがブロックに当たったか判定
+        if (block.x + block.w >= ball.x  # X位置の確認
+            and ball.y + ball.d/2 >= block.y              # 上端
+            and ball.y + ball.d/2 <= block.y + block.h):  # 下端
+            return True
+        else:
+            return False
 
+    def up_paddle(self, event):   # パドルを上に移動(Event処理)
+        self.paddle.set_v(- self.paddle_v)
 
-# ボールの移動
-def move_ball(ball):    # ボールの移動関数
-    ball.x += ball.vx    # x を vx 分移動させる
-    ball.vy += GRAVITY    # vy　に重力加える
-    ball.y += ball.vy    # y を vy 分移動させる
+    def down_paddle(self, event): # パドルを下に移動(Event処理)
+        self.paddle.set_v(self.paddle_v)
 
+    def stop_paddle(self, event): # パドルを止める(Event処理)
+        self.paddle.stop()
 
-# ボールの再描画
-def redraw_ball(ball):    # ボールの再描写関数
-    canvas.coords(ball.id, ball.x, ball.y,
-                  ball.x + ball.d, ball.y + ball.d)    # id の値を変更する
+    def set(self):   # 初期設定を一括して行う
+        # ボールの生成
+        self.ball = self.create_ball(self.west + NUM_BLOCKS * BLOCK_SPAN,
+                                     BALL_Y0, BALL_DIAMETER, BALL_VX)
+        # パドルの生成
+        self.paddle = self.create_paddle(self.east - 20,
+                                         BALL_Y0 - PADDLE_HEIGHT/2,
+                                         PADDLE_WIDTH, PADDLE_HEIGHT)
+        for x in range(NUM_BLOCKS): # ブロックの生成
+            block = self.create_block(self.west + x * BLOCK_SPAN,
+                                      BLOCK_TOP, BLOCK_WIDTH, BLOCK_HEIGHT)
+            self.blocks.append(block)
+        # イベント処理の登録
+        canvas.bind_all('<KeyPress-Up>', self.up_paddle)
+        canvas.bind_all('<KeyPress-Down>', self.down_paddle)
+        canvas.bind_all('<KeyRelease-Up>', self.stop_paddle)
+        canvas.bind_all('<KeyRelease-Down>', self.stop_paddle)
 
+    def animate(self):
+        movingObjs = [self.paddle, self.ball]   # 動くものを一括登録
+        while True:
+            for obj in movingObjs:
+                obj.move()          # 座標を移動させる
+            self.check_wall(self.ball)   # 壁との衝突処理
+            self.check_paddle(self.paddle, self.ball)  # パドル反射
+            for block in self.blocks:
+                if self.check_block(block, self.ball): # ブロック衝突
+                    self.ball.vx = - self.ball.vx
+                    canvas.delete(block.id)
+                    self.blocks.remove(block)
+            if len(self.blocks) == 0:  # 最後のブロックを消したら
+                break                  # 抜ける
 
-# -------------------------
-# paddle
-# パドルの描画・登録
-def make_paddle(x, y, w=100, h=20, c="blue"):    # パドルの作成関数
-    id = canvas.create_rectangle(x, y, x + w, y + h,
-                                 fill=c, outline=c)    # id にパドルの初期値を保存
-    return Paddle(id, x, y, w, h, 0, c)    # id を加えて返す
+            for obj in movingObjs:
+                obj.redraw()    # 移動後の座標で再描画(画面反映)
+            time.sleep(self.duration)
+            tk.update()
 
-
-# パドルの移動(左右)
-def move_paddle(pad):    # パドルの移動関数
-    pad.x += pad.vx    # x を vx 分移動させる
-
-
-# パドルの色を変える
-def change_paddle_color(pad, c="red"):    # パドルの色を変える関数
-    canvas.itemconfigure(pad.id, fill=c)    # fill を c にする
-    canvas.itemconfigure(pad.id, outline=c)    # outline を c にする
-    redraw_paddle(pad)    # パドルの再描写
-
-
-# パドルの再描画
-def redraw_paddle(pad):    # パドルの再描写関数
-    canvas.coords(pad.id, pad.x, pad.y,
-                  pad.x + pad.w, pad.y + pad.h)    # id の値を変更する
-
-
-# -------------------------
-# パドル操作のイベントハンドラ
-def left_paddle(event):  # 速度を左向き(マイナス)に設定
-    paddle.vx = -PADDLE_VX    # パドルを左に動かす
-
-
-def right_paddle(event):  # 速度を右向き(マイナス)に設定
-    paddle.vx = PADDLE_VX    # パドルを右に動かす
-
-
-def stop_paddle(event):  # 速度をゼロに設定
-    paddle.vx = 0    # パドルを止める
-
-
-# =================================================
+# ----------------------------------
+# メインルーチン
 tk = Tk()
-tk.title("Game")
+canvas = CustomCanvas(width=CANVAS_WIDTH,
+                      height=CANVAS_HEIGHT, bg=CANVAS_BACKGROUND)
 
-canvas = Canvas(tk, width=800, height=600, bd=0, highlightthickness=0)
-canvas.pack()
-tk.update()
-
-# -----------------
-# 描画アイテムを準備する。
-paddle = make_paddle(PADDLE_X0, PADDLE_Y0)    # 実際にパドルを描写する
-ball = make_ball(BALL_X0, BALL_Y0, BALL_VX, BALL_VY, 10)    # 実際にボールを描写する
-wall = Wall(WALL_X, WALL_Y, WALL_W, 400)    # 外枠の作成
-make_wall(wall)    # 実際に外枠を描写する
-
-# イベントと、イベントハンドラを連結する。
-canvas.bind_all('<KeyPress-Left>', left_paddle)    # 左押したら、パドルが左に移動する
-canvas.bind_all('<KeyPress-Right>', right_paddle)    # 右押したら、パドルが右に移動する
-canvas.bind_all('<KeyRelease-Left>', stop_paddle)    # 左離したら、パドルが止まる
-canvas.bind_all('<KeyRelease-Right>', stop_paddle)    # 右離したら、パドルが止まる
-
-# -------------------------
-# プログラムのメインループ
-while True:
-    move_paddle(paddle)  # パドルの移動
-    move_ball(ball)  # ボールの移動
-    if ball.x + ball.vx <= wall.x:  # 左側の壁を越えたら
-        ball.vx = -ball.vx    # 反射させる
-    if ball.x + ball.d + ball.vx >= wall.x + wall.w:  # 右の壁を越えたら
-        ball.vx = -ball.vx    # 反射させる
-    if ball.y + ball.vy <= wall.y:  # 上の壁を越えたら
-        ball.vy = -ball.vy    # 反射させる
-    if ball.y + ball.d + ball.vy >= 600:  # キャンバスの下についたら
-        break    # ループを抜ける
-    if paddle.x <= 0:    # パドルがキャンバスの左についたら
-        paddle.x = 0    # パドルを止める
-    if paddle.x + paddle.w >= 800:    # パドルがキャンバスの右についたら
-        paddle.x = 800 - paddle.w    # パドルを止める
-    # ボールの下側がパドルの上面に届き、横位置がパドルと重なる
-    if (paddle.y <= ball.y + ball.d <= paddle.y + paddle.h \
-            and paddle.x <= ball.x + ball.d / 2 <= paddle.x + paddle.w):    # パドルにボールが当たったら
-        change_paddle_color(paddle, random.choice(COLORS))  # 色を変える
-        ball.vy = -ball.vy * REACTION  # ボールの移動方向が変わる
-
-    redraw_paddle(paddle)  # パドルの再描画
-    redraw_ball(ball)  # ボールの再描画
-    tk.update()  # 描画が画面に反映される。
-    time.sleep(DURATION)  # 次に描画するまで、sleep する。
-
-tk.mainloop()
+box = Box(BOX_TOP_X, BOX_TOP_Y, BOX_WIDTH, BOX_HEIGHT, DURATION)
+box.set()       # ゲームの初期設定
+box.animate()   # アニメーション
