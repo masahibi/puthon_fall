@@ -23,12 +23,25 @@ class MazeGame:
         self.width = width
         self.floormap = floormap
 
+    def from_file(self, filename):    # ファイル読み込みメソッド
+        self.floormap = []
+        with open(filename) as file:    # ファイル読み込み
+            first_line = file.readline().rstrip("\n")    # １行読み込み（改行削除）
+            w_h = first_line.split(",")    # , で分割リスト
+            self.height = w_h[0]
+            self.width = w_h[1]
+            for line in file:    # ファイルから１行ずつ取り出す
+                lines = []    # １行用リスト
+                for x in line.rstrip("\n"):    # 改行抜きの行で取り出す
+                    lines.append(int(x))    # リストに追加（読み込んできたものは文字列なのでint化）
+                self.floormap.append(lines)    # １行リストに追加
+
     def print_floormap(self):  # マップ出力メソッド
         for x in self.floormap:  # データリストから取り出す
             line = ""  # １行用の変数用
             for y in x:  # 入れ子から取り出す
                 if y == 1:  # 要素が１なら
-                    mark = "■"  # 四角に
+                    mark = "■"  # 四角に■
                 else:  # 0なら
                     mark = "　"  # 空白に
                 line += mark  # markを結合
@@ -46,7 +59,7 @@ class MazeGame:
 
 
 tk = Tk()
-canvas = Canvas(tk, width=400, height=600)
+canvas = Canvas(tk, width=600, height=700)
 canvas.pack()
 
 game = MazeGame()    # インスタンス化
@@ -56,6 +69,7 @@ maze = [    # マップデータ
     [1, 1, 0, 1]
 ]
 game.set_floormap(3, 4, maze)    # 初期設定メソッド
+game.from_file(r"maze_small.txt")
 game.print_floormap()    # マップ出力メソッド
 game.draw_floormap(X, Y, W, H)    # マップ描写メソッド
 
